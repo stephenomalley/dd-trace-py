@@ -164,7 +164,7 @@ class TracedServer(ObjectProxy):
                 yield s
 
     if VERSION >= (3, 12, 0):
-
+        log.error("MYCODE: %s",VERSION)
         def run_operation(self, sock_info, operation, *args, **kwargs):
             span = self._datadog_trace_operation(operation)
             if span is None:
@@ -176,6 +176,7 @@ class TracedServer(ObjectProxy):
                         set_address_tags(span, result.address)
                     if self._is_query(operation) and hasattr(result, "docs"):
                         set_query_rowcount(docs=result.docs, span=span)
+                log.error("MYCODE: %s", result)
                 return result
 
     elif (3, 9, 0) <= VERSION < (3, 12, 0):
