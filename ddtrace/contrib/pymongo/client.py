@@ -90,7 +90,7 @@ class TracedMongoClient(ObjectProxy):
 
 class TracedTopology(ObjectProxy):
     def __init__(self, topology):
-        log.debug("pymongo TracedTopology -> %s", client)
+        log.debug("pymongo TracedTopology")
         super(TracedTopology, self).__init__(topology)
 
     def select_server(self, *args, **kwargs):
