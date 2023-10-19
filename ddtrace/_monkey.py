@@ -197,7 +197,7 @@ def patch_all(**patch_modules):
         >>> patch_all(redis=False, cassandra=False)
     """
     modules = PATCH_MODULES.copy()
-
+    log.debug("patch all -> START")
     # The enabled setting can be overridden by environment variables
     for module, _enabled in modules.items():
         env_var = "DD_TRACE_%s_ENABLED" % module.upper()
@@ -228,6 +228,7 @@ def patch(raise_errors=True, patch_modules_prefix=DEFAULT_MODULES_PREFIX, **patc
 
         >>> patch(psycopg=True, elasticsearch=True)
     """
+    log.debug("patch")
     contribs = {c: patch_indicator for c, patch_indicator in patch_modules.items() if patch_indicator}
     for contrib, patch_indicator in contribs.items():
         # Check if we have the requested contrib.
