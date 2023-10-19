@@ -74,8 +74,10 @@ class TracedMongoClient(ObjectProxy):
         # actual network time. It's bad because it uses a private API which
         # could change. We'll see how this goes.
         if not isinstance(client._topology, TracedTopology):
+            log.debug("pymongo TracedMongoClient not traced -> %s", client)
             client._topology = TracedTopology(client._topology)
-
+            
+        log.debug("pymongo TracedMongoClient -> %s", client)
         # Default Pin
         ddtrace.Pin(service=_DEFAULT_SERVICE).onto(self)
 
@@ -88,6 +90,7 @@ class TracedMongoClient(ObjectProxy):
 
 class TracedTopology(ObjectProxy):
     def __init__(self, topology):
+        log.debug("pymongo TracedTopology -> %s", client)
         super(TracedTopology, self).__init__(topology)
 
     def select_server(self, *args, **kwargs):
