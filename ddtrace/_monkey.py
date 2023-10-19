@@ -211,11 +211,11 @@ def patch_all(**patch_modules):
 
     # Arguments take precedence over the environment and the defaults.
     modules.update(patch_modules)
-
+    log.debug("patch all -> %s", modules)
     patch(raise_errors=False, **modules)
     if config._iast_enabled:
         from ddtrace.appsec._iast._patch_modules import patch_iast
-
+        
         patch_iast()
 
 
@@ -247,7 +247,7 @@ def patch(raise_errors=True, patch_modules_prefix=DEFAULT_MODULES_PREFIX, **patc
         # manually add module to patched modules
         with _LOCK:
             _PATCHED_MODULES.add(contrib)
-
+    log.debug("patch -> %s", contribs)    
     log.info(
         "Configured ddtrace instrumentation for %s integration(s). The following modules have been patched: %s",
         len(contribs),
