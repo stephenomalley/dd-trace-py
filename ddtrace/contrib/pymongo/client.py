@@ -167,6 +167,7 @@ class TracedServer(ObjectProxy):
         log.error("MYCODE: %s",VERSION)
         def run_operation(self, sock_info, operation, *args, **kwargs):
             span = self._datadog_trace_operation(operation)
+            log.debug("pymongo run_operation -> %s %s", operation,  span)
             if span is None:
                 return self.__wrapped__.run_operation(sock_info, operation, *args, **kwargs)
             with span:
@@ -238,6 +239,7 @@ class TracedSocket(ObjectProxy):
         pin = ddtrace.Pin.get_from(self)
         # skip tracing if we don't have a piece of data we need
         if not dbname or not cmd or not pin or not pin.enabled():
+            log.debug("pymongo command skipping-> %s %s %s", dbname,  cmd, pin)
             return self.__wrapped__.command(dbname, spec, *args, **kwargs)
 
         cmd.db = dbname
@@ -251,10 +253,12 @@ class TracedSocket(ObjectProxy):
             cmd = parse_msg(msg)
         except Exception:
             log.exception("error parsing msg")
-
+        log.debug("pymongo write_command -> %s", cmd)
+        
         pin = ddtrace.Pin.get_from(self)
         # if we couldn't parse it, don't try to trace it.
         if not cmd or not pin or not pin.enabled():
+            log.debug("pymongo write_command skipping-> %s %s", cmd, pin)
             return self.__wrapped__.write_command(*args, **kwargs)
 
         with self.__trace(cmd) as s:
@@ -278,6 +282,7 @@ class TracedSocket(ObjectProxy):
         s.set_tag_str(SPAN_KIND, SpanKind.CLIENT)
 
         s.set_tag(SPAN_MEASURED_KEY)
+        log.debug("pymongo __trace -> %s %s %s", cmd, cmd.db, cmd.coll)
         if cmd.db:
             s.set_tag_str(mongox.DB, cmd.db)
         if cmd:
@@ -334,6 +339,7 @@ def set_address_tags(span, address):
 def _set_query_metadata(span, cmd):
     """Sets span `mongodb.query` tag and resource given command query"""
     if cmd.query:
+         log.debug("pymongo _set_query_metadata -> %s", cmd.query)
         nq = normalize_filter(cmd.query)
         span.set_tag("mongodb.query", nq)
         # needed to dump json so we don't get unicode
@@ -341,13 +347,17 @@ def _set_query_metadata(span, cmd):
         q = json.dumps(nq)
         span.resource = "{} {} {}".format(cmd.name, cmd.coll, q)
     else:
+        log.debug("pymongo _set_query_metadata -> %s", cmd.name)
         span.resource = "{} {}".format(cmd.name, cmd.coll)
 
 
 def set_query_rowcount(docs, span):
+    log.debug("pymongo set_query_rowcount -> START")
     # results returned in batches, get len of each batch
     if isinstance(docs, Iterable) and len(docs) > 0:
         cursor = docs[0].get("cursor", None)
+        log.debug("pymongo set_query_rowcount -> cursor")
     if cursor:
         rowcount = sum([len(documents) for batch_key, documents in cursor.items() if BATCH_PARTIAL_KEY in batch_key])
         span.set_metric(db.ROWCOUNT, rowcount)
+        log.debug("pymongo set_query_rowcount -> set_metric")
